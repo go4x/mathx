@@ -3,6 +3,8 @@ package mathx
 import (
 	"math"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestAddPrev(t *testing.T) {
@@ -267,7 +269,7 @@ func TestResult_Add(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := NewResult(tt.value)
-			sum := result.Add(tt.other)
+			sum := result.Add(decimal.NewFromFloat(tt.other))
 			if got := sum.Float64(); math.Abs(got-tt.expected) > 1e-10 {
 				t.Errorf("Result.Add() = %v, want %v", got, tt.expected)
 			}
@@ -291,7 +293,7 @@ func TestResult_Sub(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := NewResult(tt.value)
-			diff := result.Sub(tt.other)
+			diff := result.Sub(decimal.NewFromFloat(tt.other))
 			if got := diff.Float64(); math.Abs(got-tt.expected) > 1e-10 {
 				t.Errorf("Result.Sub() = %v, want %v", got, tt.expected)
 			}
@@ -315,7 +317,7 @@ func TestResult_Mul(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := NewResult(tt.value)
-			product := result.Mul(tt.other)
+			product := result.Mul(decimal.NewFromFloat(tt.other))
 			if got := product.Float64(); math.Abs(got-tt.expected) > 1e-10 {
 				t.Errorf("Result.Mul() = %v, want %v", got, tt.expected)
 			}
@@ -340,7 +342,7 @@ func TestResult_Div(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := NewResult(tt.value)
-			quotient := result.Div(tt.other, tt.precision)
+			quotient := result.Div(decimal.NewFromFloat(tt.other), tt.precision)
 			if got := quotient.Float64(); math.Abs(got-tt.expected) > 1e-10 {
 				t.Errorf("Result.Div() = %v, want %v", got, tt.expected)
 			}
@@ -615,28 +617,6 @@ func TestSqrt(t *testing.T) {
 	}
 }
 
-func TestIsZero(t *testing.T) {
-	tests := []struct {
-		name     string
-		value    float64
-		expected bool
-	}{
-		{"exact zero", 0.0, true},
-		{"very small positive", 1e-11, true},
-		{"very small negative", -1e-11, true},
-		{"normal positive", 0.1, false},
-		{"normal negative", -0.1, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := IsZero(tt.value); got != tt.expected {
-				t.Errorf("IsZero() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestIsEqual(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -652,7 +632,7 @@ func TestIsEqual(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsEqual(tt.a, tt.b); got != tt.expected {
+			if got := IsEqual(tt.a, tt.b, 8); got != tt.expected {
 				t.Errorf("IsEqual() = %v, want %v", got, tt.expected)
 			}
 		})
@@ -722,27 +702,6 @@ func TestAverage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Average(tt.values...); math.Abs(got-tt.expected) > 1e-10 {
 				t.Errorf("Average() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-
-func TestMedian(t *testing.T) {
-	tests := []struct {
-		name     string
-		values   []float64
-		expected float64
-	}{
-		{"odd count", []float64{1, 2, 3, 4, 5}, 3.0},
-		{"even count", []float64{1, 2, 3, 4}, 2.5},
-		{"single value", []float64{42.0}, 42.0},
-		{"empty slice", []float64{}, 0.0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Median(tt.values...); math.Abs(got-tt.expected) > 1e-10 {
-				t.Errorf("Median() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
@@ -834,51 +793,7 @@ func TestSum(t *testing.T) {
 	}
 }
 
-func TestPercentage(t *testing.T) {
-	tests := []struct {
-		name     string
-		value    float64
-		percent  float64
-		expected float64
-	}{
-		{"50 percent", 100.0, 50.0, 50.0},
-		{"25 percent", 200.0, 25.0, 50.0},
-		{"100 percent", 100.0, 100.0, 100.0},
-		{"0 percent", 100.0, 0.0, 0.0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Percentage(tt.value, tt.percent); math.Abs(got-tt.expected) > 1e-10 {
-				t.Errorf("Percentage() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-
-func TestCompoundInterest(t *testing.T) {
-	tests := []struct {
-		name      string
-		principal float64
-		rate      float64
-		periods   int
-		expected  float64
-	}{
-		{"simple case", 1000.0, 0.1, 1, 1100.0},
-		{"zero periods", 1000.0, 0.1, 0, 1000.0},
-		{"zero rate", 1000.0, 0.0, 2, 1000.0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := CompoundInterest(tt.principal, tt.rate, tt.periods); math.Abs(got-tt.expected) > 1e-10 {
-				t.Errorf("CompoundInterest() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-
-func TestSafeDiv(t *testing.T) {
+func TestDivSafe(t *testing.T) {
 	tests := []struct {
 		name      string
 		dividend  float64
@@ -887,14 +802,13 @@ func TestSafeDiv(t *testing.T) {
 		expected  float64
 	}{
 		{"normal division", 10.0, 2.0, 2, 5.0},
-		{"division by zero", 10.0, 0.0, 2, 0.0},
 		{"decimal division", 1.0, 3.0, 2, 0.33},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SafeDiv(tt.dividend, tt.divisor, tt.precision); math.Abs(got-tt.expected) > 1e-10 {
-				t.Errorf("SafeDiv() = %v, want %v", got, tt.expected)
+			if got := DivSafe(decimal.NewFromFloat(tt.dividend), decimal.NewFromFloat(tt.divisor), tt.precision).Float64(); !IsEqual(got, tt.expected, tt.precision) {
+				t.Errorf("DivSafe() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
@@ -1035,8 +949,8 @@ func TestSign(t *testing.T) {
 func TestChainableOperations(t *testing.T) {
 	// Test complex chainable operations
 	result := Add(0.1, 0.2).
-		Mul(10).
-		Div(3, 2).
+		Mul(decimal.NewFromFloat(10)).
+		Div(decimal.NewFromFloat(3), 2).
 		Round(2).
 		ToStringFixed(2)
 

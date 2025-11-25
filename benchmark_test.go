@@ -3,6 +3,8 @@ package mathx
 import (
 	"math"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func BenchmarkAdd(b *testing.B) {
@@ -78,13 +80,6 @@ func BenchmarkAverage(b *testing.B) {
 	}
 }
 
-func BenchmarkMedian(b *testing.B) {
-	values := []float64{1, 2, 3, 4, 5}
-	for i := 0; i < b.N; i++ {
-		Median(values...)
-	}
-}
-
 func BenchmarkStandardDeviation(b *testing.B) {
 	values := []float64{1, 2, 3, 4, 5}
 	for i := 0; i < b.N; i++ {
@@ -113,21 +108,9 @@ func BenchmarkSum(b *testing.B) {
 	}
 }
 
-func BenchmarkPercentage(b *testing.B) {
+func BenchmarkDivSafe(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Percentage(100.0, 15.0)
-	}
-}
-
-func BenchmarkCompoundInterest(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		CompoundInterest(1000.0, 0.1, 2)
-	}
-}
-
-func BenchmarkSafeDiv(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		SafeDiv(10.0, 2.0, 2)
+		DivSafe(decimal.NewFromFloat(10.0), decimal.NewFromFloat(2.0), 2)
 	}
 }
 
@@ -158,8 +141,8 @@ func BenchmarkParseFloat(b *testing.B) {
 func BenchmarkChainableOperations(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Add(0.1, 0.2).
-			Mul(10).
-			Div(3, 2).
+			Mul(decimal.NewFromFloat(10)).
+			Div(decimal.NewFromFloat(3), 2).
 			Round(2).
 			ToString()
 	}
@@ -217,28 +200,28 @@ func BenchmarkResult_FormatMoney(b *testing.B) {
 func BenchmarkResult_Add(b *testing.B) {
 	result := NewResult(3.14)
 	for i := 0; i < b.N; i++ {
-		result.Add(2.0)
+		result.Add(decimal.NewFromFloat(2.0))
 	}
 }
 
 func BenchmarkResult_Sub(b *testing.B) {
 	result := NewResult(3.14)
 	for i := 0; i < b.N; i++ {
-		result.Sub(2.0)
+		result.Sub(decimal.NewFromFloat(2.0))
 	}
 }
 
 func BenchmarkResult_Mul(b *testing.B) {
 	result := NewResult(3.14)
 	for i := 0; i < b.N; i++ {
-		result.Mul(2.0)
+		result.Mul(decimal.NewFromFloat(2.0))
 	}
 }
 
 func BenchmarkResult_Div(b *testing.B) {
 	result := NewResult(3.14)
 	for i := 0; i < b.N; i++ {
-		result.Div(2.0, 2)
+		result.Div(decimal.NewFromFloat(2.0), 2)
 	}
 }
 

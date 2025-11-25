@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go4x/mathx"
+	"github.com/shopspring/decimal"
 )
 
 func ExampleAdd() {
@@ -16,8 +17,8 @@ func ExampleAdd() {
 func ExampleAdd_chainable() {
 	// Chainable operations
 	result := mathx.Add(0.1, 0.2).
-		Mul(10).
-		Div(3, 2).
+		Mul(decimal.NewFromFloat(10)).
+		Div(decimal.NewFromFloat(3), 2).
 		Round(2).
 		ToStringFixed(2)
 	fmt.Printf("Result: %s\n", result)
@@ -38,34 +39,13 @@ func ExampleAverage() {
 	scores := []float64{85, 92, 78, 96, 88}
 
 	avg := mathx.Average(scores...)
-	median := mathx.Median(scores...)
 	std := mathx.StandardDeviation(scores...)
 
 	fmt.Printf("Average: %.2f\n", avg)
-	fmt.Printf("Median: %.2f\n", median)
 	fmt.Printf("Standard Deviation: %.2f\n", std)
 	// Output:
 	// Average: 87.80
-	// Median: 88.00
 	// Standard Deviation: 6.87
-}
-
-func ExamplePercentage() {
-	// Calculate tip
-	bill := 50.00
-	tipPercent := 18.0
-	tip := mathx.Percentage(bill, tipPercent)
-
-	// Calculate total
-	total := mathx.Add(bill, tip)
-
-	fmt.Printf("Bill: $%.2f\n", bill)
-	fmt.Printf("Tip (%.0f%%): $%.2f\n", tipPercent, tip)
-	fmt.Printf("Total: $%.2f\n", total.Float64())
-	// Output:
-	// Bill: $50.00
-	// Tip (18%): $9.00
-	// Total: $59.00
 }
 
 func ExampleAdd_clean() {
@@ -131,4 +111,107 @@ func ExampleParseFloat() {
 	}
 	fmt.Printf("Parsed value: %.2f\n", value)
 	// Output: Parsed value: 3.14
+}
+
+func ExampleAddSafe() {
+	// High precision addition using decimal.Decimal
+	a, _ := decimal.NewFromString("0.1")
+	b, _ := decimal.NewFromString("0.2")
+	result := mathx.AddSafe(a, b)
+	fmt.Printf("0.1 + 0.2 = %s\n", result.String())
+	// Output: 0.1 + 0.2 = 0.3
+}
+
+func ExampleInt64Div() {
+	// Integer division with precision
+	result := mathx.Int64Div(1, 3, 4)
+	fmt.Printf("1 / 3 (4 decimal places) = %.4f\n", result)
+	// Output: 1 / 3 (4 decimal places) = 0.3333
+}
+
+func ExampleFormatMoney() {
+	// Format currency with thousands separator
+	amount := 1234567.89
+	formatted := mathx.FormatMoney(amount, 2)
+	fmt.Printf("Amount: $%s\n", formatted)
+	// Output: Amount: $1,234,567.89
+}
+
+func ExampleFormatMoneyInt() {
+	// Format integer as currency
+	amount := int64(1234567)
+	formatted := mathx.FormatMoneyInt(amount, 2)
+	fmt.Printf("Amount: $%s\n", formatted)
+	// Output: Amount: $1,234,567.00
+}
+
+func ExampleSumSafe() {
+	// High precision sum using decimal.Decimal
+	values := []decimal.Decimal{
+		decimal.RequireFromString("0.1"),
+		decimal.RequireFromString("0.2"),
+		decimal.RequireFromString("0.3"),
+	}
+	sum := mathx.SumSafe(values...)
+	fmt.Printf("Sum: %s\n", sum.String())
+	// Output: Sum: 0.6
+}
+
+func ExampleMaxSafe() {
+	// High precision max using decimal.Decimal
+	values := []decimal.Decimal{
+		decimal.RequireFromString("3.14"),
+		decimal.RequireFromString("2.71"),
+		decimal.RequireFromString("1.41"),
+	}
+	max := mathx.MaxSafe(values...)
+	fmt.Printf("Max: %s\n", max.String())
+	// Output: Max: 3.14
+}
+
+func ExampleAverageSafe() {
+	// High precision average using decimal.Decimal
+	values := []decimal.Decimal{
+		decimal.NewFromInt(85),
+		decimal.NewFromInt(92),
+		decimal.NewFromInt(78),
+	}
+	avg := mathx.AverageSafe(values...)
+	fmt.Printf("Average: %s\n", avg.String())
+	// Output: Average: 85
+}
+
+func ExampleClampSafe() {
+	// High precision clamp using decimal.Decimal
+	value := decimal.RequireFromString("15.5")
+	min := decimal.NewFromInt(0)
+	max := decimal.NewFromInt(10)
+	clamped := mathx.ClampSafe(value, min, max)
+	fmt.Printf("Clamped: %s\n", clamped.String())
+	// Output: Clamped: 10
+}
+
+func ExampleRemoveTrailingZeros() {
+	// Remove trailing zeros from float64
+	value := 3.14000
+	cleaned := mathx.RemoveTrailingZeros(value)
+	fmt.Printf("Cleaned: %s\n", cleaned)
+	// Output: Cleaned: 3.14
+}
+
+func ExampleCleanFloatString() {
+	// Get clean string representation
+	value := 3.14000
+	cleaned := mathx.CleanFloatString(value)
+	fmt.Printf("Cleaned: %s\n", cleaned)
+	// Output: Cleaned: 3.14
+}
+
+func ExampleIsEqualSafe() {
+	// High precision comparison
+	a := decimal.RequireFromString("3.14")
+	b := decimal.RequireFromString("3.1400000001")
+	equal := mathx.IsEqualSafe(a, b, 8)
+	fmt.Printf("Equal (8 decimal places): %v\n", equal)
+	// Output: Equal (8 decimal places): true
 }

@@ -3,154 +3,21 @@ package mathx
 import (
 	"fmt"
 	"math"
-	"math/big"
 	"strings"
 
 	"github.com/shopspring/decimal"
 	"golang.org/x/exp/constraints"
 )
 
-// Result represents a calculation result with chainable methods
-type Result struct {
-	v decimal.Decimal
-}
-
-// NewResult creates a new Result from a float64
-func NewResult(value float64) Result {
-	return Result{v: decimal.NewFromFloat(value)}
-}
-
-// NewResultFromString creates a new Result from a string
-// This is useful for preserving precision when working with very large or very small numbers
-func NewResultFromString(value string) (Result, error) {
-	d, err := decimal.NewFromString(value)
-	if err != nil {
-		return Result{}, err
-	}
-	return Result{v: d}, nil
-}
-
-// Float64 returns the float64 value
-func (r Result) Float64() float64 {
-	f, _ := r.v.Float64()
-	return f
-}
-
-// String returns the string representation
-func (r Result) String() string {
-	return r.v.String()
-}
-
-// ToString returns the string representation
-func (r Result) ToString() string {
-	return r.v.String()
-}
-
-// ToStringFixed returns the string with fixed decimal places
-func (r Result) ToStringFixed(places int32) string {
-	return r.v.StringFixed(places)
-}
-
-// ToStringBank returns the string with banker's rounding
-func (r Result) ToStringBank(places int32) string {
-	return r.v.StringFixedBank(places)
-}
-
-// Clean removes trailing zeros and returns a new Result
-func (r Result) Clean() Result {
-	// 转换为字符串去除尾随零，再转回decimal
-	str := r.v.String()
-	if strings.Contains(str, ".") {
-		str = strings.TrimRight(str, "0")
-		str = strings.TrimRight(str, ".")
-	}
-	cleanValue, _ := decimal.NewFromString(str)
-	return Result{v: cleanValue}
-}
-
-// Round rounds to specified precision and returns a new Result
-func (r Result) Round(places int32) Result {
-	return Result{v: r.v.Round(places)}
-}
-
-// Truncate truncates to specified precision and returns a new Result
-func (r Result) Truncate(places int32) Result {
-	if places < 0 {
-		// For negative precision, truncate to integer places
-		// e.g., precision -1 means truncate to tens place
-		multiplier := decimal.NewFromFloat(math.Pow(10, float64(-places)))
-		result := r.v.Div(multiplier).Truncate(0).Mul(multiplier)
-		return Result{v: result}
-	}
-	return Result{v: r.v.Truncate(places)}
-}
-
-// FormatMoney formats as currency with thousands separator
-func (r Result) FormatMoney(decimalPlaces int32) string {
-	rounded := r.v.Round(decimalPlaces)
-	str := rounded.StringFixed(decimalPlaces)
-
-	// 分离整数和小数部分
-	parts := strings.Split(str, ".")
-	integerPart := parts[0]
-	decimalPart := ""
-	if len(parts) > 1 {
-		decimalPart = "." + parts[1]
-	}
-
-	// 添加千位分隔符
-	if len(integerPart) > 3 {
-		var result strings.Builder
-		for i, char := range integerPart {
-			if i > 0 && (len(integerPart)-i)%3 == 0 {
-				result.WriteString(",")
-			}
-			result.WriteRune(char)
-		}
-		integerPart = result.String()
-	}
-
-	return integerPart + decimalPart
-}
-
-// Abs returns the absolute value
-func (r Result) Abs() Result {
-	return Result{v: r.v.Abs()}
-}
-
-// Neg returns the negative value
-func (r Result) Neg() Result {
-	return Result{v: r.v.Neg()}
-}
-
-// Add adds another value to this result
-func (r Result) Add(other float64) Result {
-	return Result{v: r.v.Add(decimal.NewFromFloat(other))}
-}
-
-// Sub subtracts another value from this result
-func (r Result) Sub(other float64) Result {
-	return Result{v: r.v.Sub(decimal.NewFromFloat(other))}
-}
-
-// Mul multiplies this result by another value
-func (r Result) Mul(other float64) Result {
-	return Result{v: r.v.Mul(decimal.NewFromFloat(other))}
-}
-
-// Div divides this result by another value
-func (r Result) Div(other float64, precision int32) Result {
-	return Result{v: r.v.DivRound(decimal.NewFromFloat(other), precision)}
-}
-
-// DivTrunc truncates the division
-func (r Result) DivTrunc(other float64, precision int32) Result {
-	return Result{v: r.v.Div(decimal.NewFromFloat(other)).Truncate(precision)}
-}
-
 // Add adds two float64 values using decimal precision and returns a Result
 func Add(a, b float64) Result {
 	result := decimal.NewFromFloat(a).Add(decimal.NewFromFloat(b))
+	return Result{v: result}
+}
+
+// AddSafe adds two decimal values and returns a Result
+func AddSafe(a, b decimal.Decimal) Result {
+	result := a.Add(b)
 	return Result{v: result}
 }
 
@@ -160,9 +27,21 @@ func Sub(a, b float64) Result {
 	return Result{v: result}
 }
 
+// SubSafe subtracts two decimal values and returns a Result
+func SubSafe(a, b decimal.Decimal) Result {
+	result := a.Sub(b)
+	return Result{v: result}
+}
+
 // Mul multiplies two float64 values using decimal precision and returns a Result
 func Mul(a, b float64) Result {
 	result := decimal.NewFromFloat(a).Mul(decimal.NewFromFloat(b))
+	return Result{v: result}
+}
+
+// MulSafe multiplies two decimal values and returns a Result
+func MulSafe(a, b decimal.Decimal) Result {
+	result := a.Mul(b)
 	return Result{v: result}
 }
 
@@ -172,15 +51,33 @@ func Div(a, b float64, precision int32) Result {
 	return Result{v: result}
 }
 
+// DivSafe divides two decimal values and returns a Result
+func DivSafe(a, b decimal.Decimal, precision int32) Result {
+	result := a.DivRound(b, precision)
+	return Result{v: result}
+}
+
 // DivTrunc truncates the division of two float64 values and returns a Result
 func DivTrunc(a, b float64, precision int32) Result {
 	result := decimal.NewFromFloat(a).Div(decimal.NewFromFloat(b)).Truncate(precision)
 	return Result{v: result}
 }
 
+// DivTruncSafe truncates the division of two decimal values and returns a Result
+func DivTruncSafe(a, b decimal.Decimal, precision int32) Result {
+	result := a.Div(b).Truncate(precision)
+	return Result{v: result}
+}
+
 // Round rounds a float64 to specified precision and returns a Result
 func Round(value float64, precision int32) Result {
 	result := decimal.NewFromFloat(value).Round(precision)
+	return Result{v: result}
+}
+
+// RoundSafe rounds a decimal value to specified precision and returns a Result
+func RoundSafe(a decimal.Decimal, precision int32) Result {
+	result := a.Round(precision)
 	return Result{v: result}
 }
 
@@ -194,6 +91,19 @@ func Truncate(value float64, precision int32) Result {
 		return Result{v: result}
 	}
 	result := decimal.NewFromFloat(value).Truncate(precision)
+	return Result{v: result}
+}
+
+// TruncateSafe truncates a decimal value to specified precision and returns a Result
+func TruncateSafe(a decimal.Decimal, precision int32) Result {
+	if precision < 0 {
+		// For negative precision, truncate to integer places
+		// e.g., precision -1 means truncate to tens place
+		multiplier := decimal.NewFromFloat(math.Pow(10, float64(-precision)))
+		result := a.Div(multiplier).Truncate(0).Mul(multiplier)
+		return Result{v: result}
+	}
+	result := a.Truncate(precision)
 	return Result{v: result}
 }
 
@@ -216,40 +126,6 @@ func Int64MulFloat64(multiplicand int64, multiplier float64) float64 {
 	result := decimal.NewFromInt(multiplicand).Mul(decimal.NewFromFloat(multiplier))
 	f, _ := result.Float64()
 	return f
-}
-
-// BigFloatMul multiplies two big.Float values using decimal precision
-func BigFloatMul(multiplicand, multiplier *big.Float) *big.Float {
-	m1, _ := multiplicand.Float64()
-	m2, _ := multiplier.Float64()
-	result := Mul(m1, m2)
-	return big.NewFloat(result.Float64())
-}
-
-// Percentage calculates percentage of a value
-func Percentage(value, percent float64) float64 {
-	return Mul(value, Div(percent, 100, 10).Float64()).Float64()
-}
-
-// CompoundInterest calculates compound interest
-func CompoundInterest(principal, rate float64, periods int) float64 {
-	if periods <= 0 {
-		return principal
-	}
-	multiplier := Add(1, rate)
-	power := multiplier
-	for i := 1; i < periods; i++ {
-		power = power.Mul(multiplier.Float64())
-	}
-	return Mul(principal, power.Float64()).Float64()
-}
-
-// SafeDiv safely divides two numbers, returns 0 if divisor is 0
-func SafeDiv(dividend, divisor float64, precision int32) float64 {
-	if divisor == 0 {
-		return 0
-	}
-	return Div(dividend, divisor, precision).Float64()
 }
 
 // Max returns the maximum value from a slice of numbers
@@ -291,8 +167,8 @@ func Sum[T constraints.Integer | constraints.Float](ns ...T) T {
 	return sum
 }
 
-// DecimalSum returns the sum of decimal values
-func DecimalSum(ds ...decimal.Decimal) decimal.Decimal {
+// SumSafe returns the sum of decimal values
+func SumSafe(ds ...decimal.Decimal) decimal.Decimal {
 	if len(ds) == 0 {
 		return decimal.Zero
 	}
@@ -303,8 +179,8 @@ func DecimalSum(ds ...decimal.Decimal) decimal.Decimal {
 	return sum
 }
 
-// DecimalMax returns the maximum decimal value
-func DecimalMax(ds ...decimal.Decimal) decimal.Decimal {
+// MaxSafe returns the maximum decimal value
+func MaxSafe(ds ...decimal.Decimal) decimal.Decimal {
 	if len(ds) == 0 {
 		return decimal.Zero
 	}
@@ -317,8 +193,8 @@ func DecimalMax(ds ...decimal.Decimal) decimal.Decimal {
 	return max
 }
 
-// DecimalMin returns the minimum decimal value
-func DecimalMin(ds ...decimal.Decimal) decimal.Decimal {
+// MinSafe returns the minimum decimal value
+func MinSafe(ds ...decimal.Decimal) decimal.Decimal {
 	if len(ds) == 0 {
 		return decimal.Zero
 	}
@@ -339,11 +215,21 @@ func Abs(value float64) float64 {
 	return value
 }
 
+// AbsSafe returns the absolute value of a decimal value
+func AbsSafe(a decimal.Decimal) decimal.Decimal {
+	return a.Abs()
+}
+
 // Ceil returns the smallest integer greater than or equal to the value
 func Ceil(value float64) float64 {
 	result := decimal.NewFromFloat(value).Ceil()
 	f, _ := result.Float64()
 	return f
+}
+
+// CeilSafe returns the smallest integer greater than or equal to the value of a decimal value
+func CeilSafe(a decimal.Decimal) decimal.Decimal {
+	return a.Ceil()
 }
 
 // Floor returns the largest integer less than or equal to the value
@@ -353,6 +239,11 @@ func Floor(value float64) float64 {
 	return f
 }
 
+// FloorSafe returns the largest integer less than or equal to the value of a decimal value
+func FloorSafe(a decimal.Decimal) decimal.Decimal {
+	return a.Floor()
+}
+
 // Pow raises a number to the power of another
 func Pow(base, exponent float64) float64 {
 	result := decimal.NewFromFloat(base).Pow(decimal.NewFromFloat(exponent))
@@ -360,32 +251,22 @@ func Pow(base, exponent float64) float64 {
 	return f
 }
 
+// PowSafe raises a number to the power of another of a decimal value
+func PowSafe(a decimal.Decimal, exponent decimal.Decimal) decimal.Decimal {
+	return a.Pow(exponent)
+}
+
 // Sqrt returns the square root of a number
 func Sqrt(value float64) float64 {
-	if value < 0 {
-		return 0 // 负数返回0，或者可以返回错误
-	}
-	// 使用牛顿法计算平方根
-	if value == 0 {
-		return 0
-	}
-
-	// 初始猜测值
-	guess := value / 2
-	for i := 0; i < 10; i++ { // 迭代10次
-		guess = Div(Add(guess, Div(value, guess, 10).Float64()).Float64(), 2, 10).Float64()
-	}
-	return guess
+	return math.Sqrt(value)
 }
 
-// IsZero checks if a number is zero (within a small epsilon)
-func IsZero(value float64) bool {
-	return Abs(value) < 1e-10
+func IsEqual(a, b float64, precision int32) bool {
+	return Abs(a-b) < math.Pow(10, -float64(precision))
 }
 
-// IsEqual checks if two numbers are equal (within a small epsilon)
-func IsEqual(a, b float64) bool {
-	return Abs(a-b) < 1e-8
+func IsEqualSafe(a, b decimal.Decimal, precision int32) bool {
+	return a.Sub(b).Abs().LessThan(decimal.NewFromFloat(math.Pow(10, -float64(precision))))
 }
 
 // Clamp clamps a value between min and max
@@ -399,6 +280,17 @@ func Clamp(value, min, max float64) float64 {
 	return value
 }
 
+// ClampSafe clamps a decimal value between min and max
+func ClampSafe(a decimal.Decimal, min, max decimal.Decimal) decimal.Decimal {
+	if a.LessThan(min) {
+		return min
+	}
+	if a.GreaterThan(max) {
+		return max
+	}
+	return a
+}
+
 // Lerp performs linear interpolation between two values
 func Lerp(a, b, t float64) float64 {
 	return Add(a, Mul(Sub(b, a).Float64(), t).Float64()).Float64()
@@ -410,30 +302,16 @@ func Average[T constraints.Integer | constraints.Float](ns ...T) float64 {
 		return 0
 	}
 	sum := Sum(ns...)
-	return Div(float64(sum), float64(len(ns)), 10).Float64()
+	return Div(float64(sum), float64(len(ns)), 32).Float64()
 }
 
-// Median calculates the median of a slice of numbers
-func Median[T constraints.Integer | constraints.Float](ns ...T) float64 {
-	if len(ns) == 0 {
-		return 0
+// AverageSafe calculates the average of a slice of decimal values
+func AverageSafe(ds ...decimal.Decimal) decimal.Decimal {
+	if len(ds) == 0 {
+		return decimal.Zero
 	}
-	// 简单的冒泡排序
-	for i := 0; i < len(ns)-1; i++ {
-		for j := 0; j < len(ns)-i-1; j++ {
-			if ns[j] > ns[j+1] {
-				ns[j], ns[j+1] = ns[j+1], ns[j]
-			}
-		}
-	}
-
-	n := len(ns)
-	if n%2 == 0 {
-		mid1 := float64(ns[n/2-1])
-		mid2 := float64(ns[n/2])
-		return Div(Add(mid1, mid2).Float64(), 2, 10).Float64()
-	}
-	return float64(ns[n/2])
+	sum := SumSafe(ds...)
+	return DivSafe(sum, decimal.NewFromInt(int64(len(ds))), 32).Decimal()
 }
 
 // StandardDeviation calculates the standard deviation of a slice of numbers
@@ -563,6 +441,8 @@ func FormatMoneyInt(amount int64, decimalPlaces int32) string {
 	decimalPart := ""
 	if len(parts) > 1 {
 		decimalPart = "." + parts[1]
+	} else {
+		decimalPart = ".00"
 	}
 
 	// 添加千位分隔符
