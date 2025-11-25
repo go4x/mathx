@@ -8,6 +8,7 @@ A high-precision decimal math library for Go that provides accurate floating-poi
 - **Chainable API**: Fluent interface for mathematical operations
 - **Type Safety**: Compile-time type checking with generic support
 - **Comprehensive**: Basic operations, statistical functions, formatting utilities
+- **Safe Functions**: High-precision functions that accept `decimal.Decimal` directly
 - **Zero Dependencies**: Only depends on `shopspring/decimal` and standard library
 
 ## Installation
@@ -24,6 +25,7 @@ package main
 import (
     "fmt"
     "github.com/go4x/mathx"
+    "github.com/shopspring/decimal"
 )
 
 func main() {
@@ -33,8 +35,8 @@ func main() {
     
     // Chainable operations
     formatted := mathx.Add(0.1, 0.2).
-        Mul(10).
-        Div(3, 2).
+        Add(decimal.NewFromFloat(10)).
+        Div(decimal.NewFromFloat(3), 2).
         Round(2).
         ToString()
     fmt.Println(formatted) // "1.00"
@@ -44,6 +46,12 @@ func main() {
         Round(2).
         FormatMoney(2)
     fmt.Printf("Price: $%s\n", price) // Price: $114.99
+    
+    // High precision with Safe functions
+    a, _ := decimal.NewFromString("0.1")
+    b, _ := decimal.NewFromString("0.2")
+    result := mathx.AddSafe(a, b)
+    fmt.Println(result.String()) // "0.3"
 }
 ```
 
@@ -63,6 +71,16 @@ fmt.Println(sum) // 3
 
 // Chainable usage
 str := mathx.Add(1, 2).ToString() // "3"
+```
+
+### Creating Results
+
+```go
+// From float64
+result := mathx.NewResult(3.14)
+
+// From string (preserves precision)
+result, err := mathx.NewResultFromString("3.14159265358979323846")
 ```
 
 ## API Reference
@@ -117,6 +135,126 @@ Divides two numbers and truncates to specified precision.
 
 ```go
 result := mathx.DivTrunc(10.0, 3.0, 2) // 3.33
+```
+
+### Safe Functions (High Precision)
+
+Safe functions accept `decimal.Decimal` directly, avoiding float64 conversion precision loss:
+
+#### AddSafe
+```go
+func AddSafe(a, b decimal.Decimal) Result
+```
+High precision addition using decimal.Decimal.
+
+```go
+a, _ := decimal.NewFromString("0.1")
+b, _ := decimal.NewFromString("0.2")
+result := mathx.AddSafe(a, b) // "0.3"
+```
+
+#### SubSafe
+```go
+func SubSafe(a, b decimal.Decimal) Result
+```
+High precision subtraction.
+
+#### MulSafe
+```go
+func MulSafe(a, b decimal.Decimal) Result
+```
+High precision multiplication.
+
+#### DivSafe
+```go
+func DivSafe(a, b decimal.Decimal, precision int32) Result
+```
+High precision division.
+
+#### DivTruncSafe
+```go
+func DivTruncSafe(a, b decimal.Decimal, precision int32) Result
+```
+High precision truncating division.
+
+#### RoundSafe
+```go
+func RoundSafe(a decimal.Decimal, precision int32) Result
+```
+High precision rounding.
+
+#### TruncateSafe
+```go
+func TruncateSafe(a decimal.Decimal, precision int32) Result
+```
+High precision truncation.
+
+#### AbsSafe
+```go
+func AbsSafe(a decimal.Decimal) decimal.Decimal
+```
+High precision absolute value.
+
+#### CeilSafe
+```go
+func CeilSafe(a decimal.Decimal) decimal.Decimal
+```
+High precision ceiling.
+
+#### FloorSafe
+```go
+func FloorSafe(a decimal.Decimal) decimal.Decimal
+```
+High precision floor.
+
+#### PowSafe
+```go
+func PowSafe(a decimal.Decimal, exponent decimal.Decimal) decimal.Decimal
+```
+High precision power.
+
+#### IsEqualSafe
+```go
+func IsEqualSafe(a, b decimal.Decimal, precision int32) bool
+```
+High precision comparison.
+
+#### ClampSafe
+```go
+func ClampSafe(a decimal.Decimal, min, max decimal.Decimal) decimal.Decimal
+```
+High precision clamping.
+
+### Integer Functions
+
+#### Int64Div
+```go
+func Int64Div(dividend, divisor int64, precision int32) float64
+```
+Divides two int64 values with specified precision.
+
+```go
+result := mathx.Int64Div(1, 3, 4) // 0.3333
+```
+
+#### Int64DivTrunc
+```go
+func Int64DivTrunc(dividend, divisor int64, precision int32) float64
+```
+Truncates the division of two int64 values.
+
+```go
+result := mathx.Int64DivTrunc(10, 3, 2) // 3.33
+```
+
+#### Int64MulFloat64
+```go
+func Int64MulFloat64(multiplicand int64, multiplier float64) float64
+```
+Multiplies int64 and float64 using decimal precision.
+
+```go
+result := mathx.Int64MulFloat64(100, 0.1) // 10.0
 ```
 
 ### Mathematical Functions
@@ -191,6 +329,16 @@ Returns the square root of a number.
 result := mathx.Sqrt(16.0) // 4.0
 ```
 
+#### IsEqual
+```go
+func IsEqual(a, b float64, precision int32) bool
+```
+Checks if two numbers are equal within specified precision.
+
+```go
+equal := mathx.IsEqual(3.14, 3.1400001, 6) // true
+```
+
 ### Statistical Functions
 
 #### Average
@@ -203,14 +351,19 @@ Calculates the average of a slice of numbers.
 avg := mathx.Average(1, 2, 3, 4, 5) // 3.0
 ```
 
-#### Median
+#### AverageSafe
 ```go
-func Median[T constraints.Integer | constraints.Float](ns ...T) float64
+func AverageSafe(ds ...decimal.Decimal) decimal.Decimal
 ```
-Calculates the median of a slice of numbers.
+High precision average calculation.
 
 ```go
-median := mathx.Median(1, 2, 3, 4, 5) // 3.0
+values := []decimal.Decimal{
+    decimal.NewFromInt(85),
+    decimal.NewFromInt(92),
+    decimal.NewFromInt(78),
+}
+avg := mathx.AverageSafe(values...) // 85
 ```
 
 #### StandardDeviation
@@ -233,6 +386,20 @@ Returns the maximum value from a slice of numbers.
 max := mathx.Max(1, 5, 3, 9, 2) // 9.0
 ```
 
+#### MaxSafe
+```go
+func MaxSafe(ds ...decimal.Decimal) decimal.Decimal
+```
+High precision maximum value.
+
+```go
+values := []decimal.Decimal{
+    decimal.RequireFromString("3.14"),
+    decimal.RequireFromString("2.71"),
+}
+max := mathx.MaxSafe(values...) // 3.14
+```
+
 #### Min
 ```go
 func Min[T constraints.Ordered](ns ...T) T
@@ -243,6 +410,12 @@ Returns the minimum value from a slice of numbers.
 min := mathx.Min(1, 5, 3, 9, 2) // 1.0
 ```
 
+#### MinSafe
+```go
+func MinSafe(ds ...decimal.Decimal) decimal.Decimal
+```
+High precision minimum value.
+
 #### Sum
 ```go
 func Sum[T constraints.Integer | constraints.Float](ns ...T) T
@@ -251,6 +424,21 @@ Returns the sum of a slice of numbers.
 
 ```go
 sum := mathx.Sum(1, 2, 3, 4, 5) // 15.0
+```
+
+#### SumSafe
+```go
+func SumSafe(ds ...decimal.Decimal) decimal.Decimal
+```
+High precision sum calculation.
+
+```go
+values := []decimal.Decimal{
+    decimal.RequireFromString("0.1"),
+    decimal.RequireFromString("0.2"),
+    decimal.RequireFromString("0.3"),
+}
+sum := mathx.SumSafe(values...) // 0.6
 ```
 
 ### Utility Functions
@@ -275,35 +463,33 @@ Performs linear interpolation between two values.
 result := mathx.Lerp(0.0, 10.0, 0.5) // 5.0
 ```
 
-#### Percentage
+#### ToFixed
 ```go
-func Percentage(value, percent float64) float64
+func ToFixed(value float64, places int32) float64
 ```
-Calculates percentage of a value.
+Formats a number to a fixed number of decimal places.
 
 ```go
-result := mathx.Percentage(100.0, 15.0) // 15.0
+result := mathx.ToFixed(3.14159, 2) // 3.14
 ```
 
-#### CompoundInterest
+#### IsPositive
 ```go
-func CompoundInterest(principal, rate float64, periods int) float64
+func IsPositive(value float64) bool
 ```
-Calculates compound interest.
+Checks if a number is positive.
 
+#### IsNegative
 ```go
-result := mathx.CompoundInterest(1000.0, 0.1, 2) // 1210.0
+func IsNegative(value float64) bool
 ```
+Checks if a number is negative.
 
-#### SafeDiv
+#### Sign
 ```go
-func SafeDiv(dividend, divisor float64, precision int32) float64
+func Sign(value float64) int
 ```
-Safely divides two numbers, returns 0 if divisor is 0.
-
-```go
-result := mathx.SafeDiv(10.0, 0.0, 2) // 0.0
-```
+Returns the sign of a number (-1, 0, or 1).
 
 ### String Conversion
 
@@ -337,6 +523,8 @@ Converts a float64 to string with banker's rounding.
 str := mathx.ToStringBank(3.145, 2) // "3.14"
 ```
 
+### Formatting Functions
+
 #### FormatMoney
 ```go
 func FormatMoney(amount float64, decimalPlaces int32) string
@@ -345,6 +533,66 @@ Formats a number as currency with thousands separator.
 
 ```go
 str := mathx.FormatMoney(1234567.89, 2) // "1,234,567.89"
+```
+
+#### FormatMoneyInt
+```go
+func FormatMoneyInt(amount int64, decimalPlaces int32) string
+```
+Formats an int64 as currency with thousands separator.
+
+```go
+str := mathx.FormatMoneyInt(1234567, 2) // "1,234,567.00"
+```
+
+#### FormatCurrency
+```go
+func FormatCurrency(amount float64, decimalPlaces int32) string
+```
+Formats a number as currency with specified decimal places.
+
+```go
+str := mathx.FormatCurrency(123.45, 2) // "123.45"
+```
+
+#### RemoveTrailingZeros
+```go
+func RemoveTrailingZeros(value float64) string
+```
+Removes trailing zeros from a float64 string representation.
+
+```go
+str := mathx.RemoveTrailingZeros(3.14000) // "3.14"
+```
+
+#### RemoveTrailingZerosFixed
+```go
+func RemoveTrailingZerosFixed(value float64, places int32) string
+```
+Removes trailing zeros from a float64 with fixed decimal places.
+
+```go
+str := mathx.RemoveTrailingZerosFixed(3.14000, 4) // "3.14"
+```
+
+#### CleanFloat
+```go
+func CleanFloat(value float64) float64
+```
+Removes trailing zeros and returns a clean float64.
+
+```go
+result := mathx.CleanFloat(3.14000) // 3.14
+```
+
+#### CleanFloatString
+```go
+func CleanFloatString(value float64) string
+```
+Removes trailing zeros and returns a clean string representation.
+
+```go
+str := mathx.CleanFloatString(3.14000) // "3.14"
 ```
 
 #### ParseFloat
@@ -364,35 +612,43 @@ if err == nil {
 
 The `Result` type provides chainable methods for further operations:
 
+#### Creating Results
+```go
+func NewResult(value float64) Result
+func NewResultFromString(value string) (Result, error)
+func (r Result) Decimal() decimal.Decimal
+```
+
 #### String Conversion
 ```go
-result.ToString() string
-result.ToStringFixed(places int32) string
-result.ToStringBank(places int32) string
+func (r Result) String() string
+func (r Result) ToString() string
+func (r Result) ToStringFixed(places int32) string
+func (r Result) ToStringBank(places int32) string
 ```
 
 #### Formatting
 ```go
-result.FormatMoney(decimalPlaces int32) string
-result.Clean() Result // Removes trailing zeros
+func (r Result) FormatMoney(decimalPlaces int32) string
+func (r Result) Clean() Result // Removes trailing zeros
 ```
 
 #### Mathematical Operations
 ```go
-result.Add(other float64) Result
-result.Sub(other float64) Result
-result.Mul(other float64) Result
-result.Div(other float64, precision int32) Result
-result.Round(places int32) Result
-result.Truncate(places int32) Result
-result.Abs() Result
-result.Neg() Result
+func (r Result) Add(other decimal.Decimal) Result
+func (r Result) Sub(other decimal.Decimal) Result
+func (r Result) Mul(other decimal.Decimal) Result
+func (r Result) Div(other decimal.Decimal, precision int32) Result
+func (r Result) DivTrunc(other decimal.Decimal, precision int32) Result
+func (r Result) Round(places int32) Result
+func (r Result) Truncate(places int32) Result
+func (r Result) Abs() Result
+func (r Result) Neg() Result
 ```
 
 #### Value Extraction
 ```go
-result.Float64() float64
-result.String() string
+func (r Result) Float64() float64
 ```
 
 ## Examples
@@ -422,6 +678,35 @@ func main() {
 }
 ```
 
+### High Precision Calculations
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/go4x/mathx"
+    "github.com/shopspring/decimal"
+)
+
+func main() {
+    // Use Safe functions for maximum precision
+    a, _ := decimal.NewFromString("0.1")
+    b, _ := decimal.NewFromString("0.2")
+    result := mathx.AddSafe(a, b)
+    fmt.Println(result.String()) // "0.3"
+    
+    // Chain Safe operations
+    values := []decimal.Decimal{
+        decimal.RequireFromString("0.1"),
+        decimal.RequireFromString("0.2"),
+        decimal.RequireFromString("0.3"),
+    }
+    sum := mathx.SumSafe(values...)
+    fmt.Println(sum.String()) // "0.6"
+}
+```
+
 ### Statistical Analysis
 
 ```go
@@ -436,11 +721,9 @@ func main() {
     scores := []float64{85, 92, 78, 96, 88}
     
     avg := mathx.Average(scores...)
-    median := mathx.Median(scores...)
     std := mathx.StandardDeviation(scores...)
     
     fmt.Printf("Average: %.2f\n", avg)
-    fmt.Printf("Median: %.2f\n", median)
     fmt.Printf("Standard Deviation: %.2f\n", std)
 }
 ```
@@ -452,44 +735,20 @@ package main
 
 import (
     "fmt"
-    "github.com/go4x/goal/mathx"
+    "github.com/go4x/mathx"
+    "github.com/shopspring/decimal"
 )
 
 func main() {
     // Complex calculation with formatting
     result := mathx.Add(0.1, 0.2).
-        Mul(100).
-        Div(3, 4).
+        Add(decimal.NewFromFloat(100)).
+        Div(decimal.NewFromFloat(3), 4).
         Round(2).
         Clean().
         ToString()
     
     fmt.Println(result) // "10.00"
-}
-```
-
-### Percentage Calculations
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/go4x/mathx"
-)
-
-func main() {
-    // Calculate tip
-    bill := 50.00
-    tipPercent := 18.0
-    tip := mathx.Percentage(bill, tipPercent)
-    
-    // Calculate total
-    total := mathx.Add(bill, tip)
-    
-    fmt.Printf("Bill: $%.2f\n", bill)
-    fmt.Printf("Tip (%.0f%%): $%.2f\n", tipPercent, tip)
-    fmt.Printf("Total: $%.2f\n", total.Float64())
 }
 ```
 
@@ -499,13 +758,19 @@ func main() {
 - String conversions may have slight overhead compared to native float64 operations
 - For performance-critical applications, consider using the direct `float64` return values
 - Chainable operations create new `Result` instances, so use judiciously in tight loops
+- Safe functions avoid float64 conversion overhead and provide maximum precision
 
 ## Error Handling
 
-Most functions return `float64` or `Result` types directly. Functions that can fail (like `ParseFloat`) return `(value, error)` tuples.
+Most functions return `float64` or `Result` types directly. Functions that can fail (like `ParseFloat` and `NewResultFromString`) return `(value, error)` tuples.
 
 ```go
 value, err := mathx.ParseFloat("invalid")
+if err != nil {
+    // Handle error
+}
+
+result, err := mathx.NewResultFromString("invalid")
 if err != nil {
     // Handle error
 }
