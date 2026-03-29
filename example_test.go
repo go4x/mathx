@@ -15,7 +15,7 @@ func ExampleAdd() {
 }
 
 func ExampleAdd_chainable() {
-	// Chainable operations
+	// Test normal chainable operations
 	result := mathx.Add(0.1, 0.2).
 		Mul(decimal.NewFromFloat(10)).
 		Div(decimal.NewFromFloat(3), 2).
@@ -23,15 +23,94 @@ func ExampleAdd_chainable() {
 		ToStringFixed(2)
 	fmt.Printf("Result: %s\n", result)
 	// Output: Result: 1.00
+
+	// Test with negative numbers
+	result = mathx.Add(-1.5, 2.5).
+		Mul(decimal.NewFromFloat(-2)).
+		Div(decimal.NewFromFloat(2), 1).
+		Round(2).
+		ToStringFixed(2)
+	fmt.Printf("Result: %s\n", result)
+	// Output: Result: -1.00
+
+	// Test with zero
+	result = mathx.Add(0, 0).
+		Mul(decimal.NewFromFloat(0)).
+		Div(decimal.NewFromFloat(1), 1).
+		Round(2).
+		ToStringFixed(2)
+	fmt.Printf("Result: %s\n", result)
+	// Output: Result: 0.00
+
+	// Test with large numbers
+	result = mathx.Add(1e10, 2e10).
+		Mul(decimal.NewFromFloat(3)).
+		Div(decimal.NewFromFloat(2), 1).
+		Round(0).
+		ToStringFixed(0)
+	fmt.Printf("Result: %s\n", result)
+	// Output: Result: 45000000000
+
+	// Test with small decimal numbers
+	result = mathx.Add(0.0001, 0.0002).
+		Mul(decimal.NewFromFloat(1000)).
+		Div(decimal.NewFromFloat(3), 2).
+		Round(4).
+		ToStringFixed(4)
+	fmt.Printf("Result: %s\n", result)
+	// Output: Result: 0.1000
+
+	// Test chaining with only Add
+	result = mathx.Add(1.1, 2.2).
+		Round(1).
+		ToStringFixed(1)
+	fmt.Printf("Result: %s\n", result)
+	// Output: Result: 3.3
 }
 
-func ExampleMul() {
+func ExampleMul_basic() {
 	// Money formatting with thousands separator
 	price := mathx.Mul(99.99, 1.15).
 		Round(2).
 		FormatMoney(2)
 	fmt.Printf("Price: $%s\n", price)
 	// Output: Price: $114.99
+}
+
+func ExampleMul_zero() {
+	// Test with zero
+	price := mathx.Mul(0, 1.15).
+		Round(2).
+		FormatMoney(2)
+	fmt.Printf("Price with zero: $%s\n", price)
+	// Output: Price with zero: $0.00
+}
+
+func ExampleMul_negative() {
+	// Test with negative numbers
+	price := mathx.Mul(-99.99, 1.15).
+		Round(2).
+		FormatMoney(2)
+	fmt.Printf("Price with negative: $%s\n", price)
+	// Output: Price with negative: $-114.99
+}
+
+func ExampleMul_large() {
+	// Test with large numbers
+	price := mathx.Mul(1e10, 1.15).
+		Round(2).
+		FormatMoney(2)
+	fmt.Printf("Price with large number: $%s\n", price)
+	// Output: Price with large number: $11500000000.00
+}
+
+func ExampleMul_decimalPlaces() {
+	// Test with different decimal places
+	price := mathx.Mul(99.99, 1.15).
+		Round(3).
+		FormatMoney(3)
+	fmt.Printf("Price with three decimals: $%s\n", price)
+	// Output: Price with three decimals: $114.989
 }
 
 func ExampleAverage() {
